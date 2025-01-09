@@ -173,20 +173,23 @@ namespace Riptide
         /// <summary>Trims the message pool to a more appropriate size for how many <see cref="Server"/> and/or <see cref="Client"/> instances are currently running.</summary>
         public static void TrimPool()
         {
-            if (Peer.ActiveCount == 0)
+            lock (pool)
             {
-                // No Servers or Clients are running, empty the list and reset the capacity
-                pool.Clear();
-                pool.Capacity = InstancesPerPeer * 2; // x2 so there's some buffer room for extra Message instances in the event that more are needed
-            }
-            else
-            {
-                // Reset the pool capacity and number of Message instances in the pool to what is appropriate for how many Servers & Clients are active
-                int idealInstanceAmount = Peer.ActiveCount * InstancesPerPeer;
-                if (pool.Count > idealInstanceAmount)
+                if (Peer.ActiveCount == 0)
                 {
-                    pool.RemoveRange(Peer.ActiveCount * InstancesPerPeer, pool.Count - idealInstanceAmount);
-                    pool.Capacity = idealInstanceAmount * 2;
+                    // No Servers or Clients are running, empty the list and reset the capacity
+                    pool.Clear();
+                    pool.Capacity = InstancesPerPeer * 2; // x2 so there's some buffer room for extra Message instances in the event that more are needed
+                }
+                else
+                {
+                    // Reset the pool capacity and number of Message instances in the pool to what is appropriate for how many Servers & Clients are active
+                    int idealInstanceAmount = Peer.ActiveCount * InstancesPerPeer;
+                    if (pool.Count > idealInstanceAmount)
+                    {
+                        pool.RemoveRange(Peer.ActiveCount * InstancesPerPeer, pool.Count - idealInstanceAmount);
+                        pool.Capacity = idealInstanceAmount * 2;
+                    }
                 }
             }
         }
