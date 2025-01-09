@@ -62,8 +62,9 @@ namespace Riptide.Transports.Udp
         /// <inheritdoc/>
         public void Close(Connection connection)
         {
-            if (connection is UdpConnection udpConnection)
-                connections.Remove(udpConnection.RemoteEndPoint);
+            if (connection is not UdpConnection udpConnection) return;
+
+            connections.Remove(udpConnection.RemoteEndPoint);
         }
 
         /// <inheritdoc/>
@@ -73,21 +74,30 @@ namespace Riptide.Transports.Udp
             connections.Clear();
         }
 
+        private readonly ConnectedEventArgs _reuseConnectedEventArgs = new();
         /// <summary>Invokes the <see cref="Connected"/> event.</summary>
         /// <param name="connection">The successfully established connection.</param>
         protected virtual void OnConnected(Connection connection)
         {
-            Connected?.Invoke(this, new ConnectedEventArgs(connection));
+            if (Connected == null) return;
+
+            _reuseConnectedEventArgs.SetData(connection);
+            Connected.Invoke(this, _reuseConnectedEventArgs);
         }
 
+        private readonly DataReceivedEventArgs _reuseDataReceivedEventArgs = new();
         /// <inheritdoc/>
         protected override void OnDataReceived(byte[] dataBuffer, int amount, IPEndPoint fromEndPoint)
         {
+            if (DataReceived == null) return;
             if ((MessageHeader)(dataBuffer[0] & Message.HeaderBitmask) == MessageHeader.Connect && !HandleConnectionAttempt(fromEndPoint))
                 return;
 
-            if (connections.TryGetValue(fromEndPoint, out Connection connection) && !connection.IsNotConnected)
-                DataReceived?.Invoke(this, new DataReceivedEventArgs(dataBuffer, amount, connection));
+            if (!connections.TryGetValue(fromEndPoint, out Connection connection)) return;
+            if (connection.IsNotConnected) return;
+
+            _reuseDataReceivedEventArgs.SetData(dataBuffer, amount, connection);
+            DataReceived.Invoke(this, _reuseDataReceivedEventArgs);
         }
     }
 }

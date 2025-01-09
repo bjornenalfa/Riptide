@@ -101,11 +101,16 @@ namespace Riptide.Transports.Udp
             ConnectionFailed?.Invoke(this, EventArgs.Empty);
         }
 
+        private readonly DataReceivedEventArgs ReuseDataReceivedEventArgs = new();
         /// <inheritdoc/>
         protected override void OnDataReceived(byte[] dataBuffer, int amount, IPEndPoint fromEndPoint)
         {
-            if (udpConnection.RemoteEndPoint.Equals(fromEndPoint) && !udpConnection.IsNotConnected)
-                DataReceived?.Invoke(this, new DataReceivedEventArgs(dataBuffer, amount, udpConnection));
+            if (DataReceived == null) return;
+            if (!udpConnection.RemoteEndPoint.Equals(fromEndPoint)) return;
+            if (udpConnection.IsNotConnected) return;
+
+            ReuseDataReceivedEventArgs.SetData(dataBuffer, amount, udpConnection);
+            DataReceived.Invoke(this, ReuseDataReceivedEventArgs);
         }
     }
 }

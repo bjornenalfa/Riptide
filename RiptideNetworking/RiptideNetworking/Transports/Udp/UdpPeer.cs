@@ -176,12 +176,16 @@ namespace Riptide.Transports.Udp
         /// <param name="fromEndPoint">The endpoint from which the data was received.</param>
         protected abstract void OnDataReceived(byte[] dataBuffer, int amount, IPEndPoint fromEndPoint);
 
+        private readonly DisconnectedEventArgs _reuseDisconnectedEventArgs = new();
         /// <summary>Invokes the <see cref="Disconnected"/> event.</summary>
         /// <param name="connection">The closed connection.</param>
         /// <param name="reason">The reason for the disconnection.</param>
         protected virtual void OnDisconnected(Connection connection, DisconnectReason reason)
         {
-            Disconnected?.Invoke(this, new DisconnectedEventArgs(connection, reason));
+            if (Disconnected == null) return;
+
+            _reuseDisconnectedEventArgs.SetData(connection, reason);
+            Disconnected.Invoke(this, _reuseDisconnectedEventArgs);
         }
     }
 }

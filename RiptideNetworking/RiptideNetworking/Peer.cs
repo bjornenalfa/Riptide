@@ -7,8 +7,10 @@ using Riptide.Transports;
 using Riptide.Utils;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
+using DataReceivedEventArgs = Riptide.Transports.DataReceivedEventArgs;
 
 namespace Riptide
 {
@@ -159,35 +161,48 @@ namespace Riptide
         protected void HandleData(object _, DataReceivedEventArgs e)
         {
             Message message = Message.Create().Init(e.DataBuffer[0], e.Amount, out MessageHeader header);
-            
-            if (message.SendMode == MessageSendMode.Notify)
+
+            switch (message.SendMode)
             {
-                if (e.Amount < Message.MinNotifyBytes)
+                case MessageSendMode.Notify:
+                    {
+                        if (e.Amount < Message.MinNotifyBytes) return;
+
+                        e.FromConnection.ProcessNotify(e.DataBuffer, e.Amount, message);
+                        return;
+                    }
+                case MessageSendMode.Unreliable:
+                    {
+                        if (e.Amount > Message.MinUnreliableBytes)
+                        {
+                            Buffer.BlockCopy(e.DataBuffer, 1, message.Data, 1, e.Amount - 1);
+                        }
+
+                        messagesToHandle.Enqueue(new MessageToHandle(message, header, e.FromConnection));
+                        e.FromConnection.Metrics.ReceivedUnreliable(e.Amount);
+                        return;
+                    }
+                case MessageSendMode.Reliable:
+                    {
+                        if (e.Amount < Message.MinReliableBytes)
+                            return;
+
+                        e.FromConnection.Metrics.ReceivedReliable(e.Amount);
+                        if (e.FromConnection.ShouldHandle(Converter.UShortFromBits(e.DataBuffer, Message.HeaderBits)))
+                        {
+                            Buffer.BlockCopy(e.DataBuffer, 1, message.Data, 1, e.Amount - 1);
+                            messagesToHandle.Enqueue(new MessageToHandle(message, header, e.FromConnection));
+                        }
+                        else
+                        {
+                            e.FromConnection.Metrics.ReliableDiscarded++;
+                        }
+
+                        return;
+                    }
+                default:
+                    Debug.Assert(false, "Unknown send mode");
                     return;
-
-                e.FromConnection.ProcessNotify(e.DataBuffer, e.Amount, message);
-            }
-            else if (message.SendMode == MessageSendMode.Unreliable)
-            {
-                if (e.Amount > Message.MinUnreliableBytes)
-                    Buffer.BlockCopy(e.DataBuffer, 1, message.Data, 1, e.Amount - 1);
-
-                messagesToHandle.Enqueue(new MessageToHandle(message, header, e.FromConnection));
-                e.FromConnection.Metrics.ReceivedUnreliable(e.Amount);
-            }
-            else
-            {
-                if (e.Amount < Message.MinReliableBytes)
-                    return;
-
-                e.FromConnection.Metrics.ReceivedReliable(e.Amount);
-                if (e.FromConnection.ShouldHandle(Converter.UShortFromBits(e.DataBuffer, Message.HeaderBits)))
-                {
-                    Buffer.BlockCopy(e.DataBuffer, 1, message.Data, 1, e.Amount - 1);
-                    messagesToHandle.Enqueue(new MessageToHandle(message, header, e.FromConnection));
-                }
-                else
-                    e.FromConnection.Metrics.ReliableDiscarded++;
             }
         }
 
