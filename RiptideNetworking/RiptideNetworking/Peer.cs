@@ -82,7 +82,7 @@ namespace Riptide
         /// <summary>Received messages which need to be handled.</summary>
         private readonly Queue<MessageToHandle> messagesToHandle = new Queue<MessageToHandle>();
         /// <summary>A queue of events to execute, ordered by how soon they need to be executed.</summary>
-        private readonly PriorityQueue<DelayedEvent, long> eventQueue = new PriorityQueue<DelayedEvent, long>();
+        private readonly System.Collections.Generic.PriorityQueue<DelayedEvent, long> eventQueue = new System.Collections.Generic.PriorityQueue<DelayedEvent, long>();
 
         /// <summary>Initializes the peer.</summary>
         /// <param name="logName">The name to use when logging messages via <see cref="RiptideLogger"/>.</param>
@@ -133,7 +133,7 @@ namespace Riptide
         {
             CurrentTime = time.ElapsedMilliseconds;
 
-            while (eventQueue.Count > 0 && eventQueue.PeekPriority() <= CurrentTime)
+            while (eventQueue.TryPeek(out _, out var priority) && priority <= CurrentTime)
                 eventQueue.Dequeue().Invoke();
         }
 
