@@ -25,17 +25,6 @@
     <UPMSourceFiles Include="$(ProjectDir)\**\*.cs" Exclude="$(ProjectDir)\obj\**\*.*" />
   </ItemGroup>
 
-  <ItemGroup>
-    <None Include="..\nuget-readme.md">
-      <Pack>True</Pack>
-      <PackagePath>\</PackagePath>
-    </None>
-    <None Include="..\package-icon.png">
-      <Pack>True</Pack>
-      <PackagePath>\</PackagePath>
-    </None>
-  </ItemGroup>
-
   <Target Name="PostBuild" AfterTargets="PostBuildEvent">
     <Copy Condition="'$(SolutionName)'=='RiptideNetworking'" SourceFiles="@(UPMSourceFiles)" DestinationFiles="@(UPMSourceFiles->'$(SolutionDir)..\Packages\Core\Runtime\Core\%(RecursiveDir)%(Filename)%(Extension)')" SkipUnchangedFiles="true" />
   </Target>
