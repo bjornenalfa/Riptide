@@ -88,6 +88,8 @@ namespace Riptide
         /// <summary>A pool of reusable message instances.</summary>
         private static readonly List<Message> pool = new List<Message>(InstancesPerPeer * 2);
 
+        private static readonly object poolLock = new();
+
         static Message()
         {
             MaxSize = MaxHeaderSize / BitsPerByte + (MaxHeaderSize % BitsPerByte == 0 ? 0 : 1) + 1225;
@@ -194,13 +196,16 @@ namespace Riptide
         private static Message RetrieveFromPool()
         {
             Message message;
-            if (pool.Count > 0)
+            lock (pool)
             {
-                message = pool[0];
-                pool.RemoveAt(0);
+                if (pool.Count > 0)
+                {
+                    message = pool[0];
+                    pool.RemoveAt(0);
+                }
+                else
+                    message = new Message();
             }
-            else
-                message = new Message();
 
             return message;
         }
@@ -208,11 +213,14 @@ namespace Riptide
         /// <summary>Returns the message instance to the internal pool so it can be reused.</summary>
         public void Release()
         {
-            if (pool.Count < pool.Capacity)
+            lock (pool)
             {
-                // Pool exists and there's room
-                if (!pool.Contains(this))
-                    pool.Add(this); // Only add it if it's not already in the list, otherwise this method being called twice in a row for whatever reason could cause *serious* issues
+                if (pool.Count < pool.Capacity)
+                {
+                    // Pool exists and there's room
+                    if (!pool.Contains(this))
+                        pool.Add(this); // Only add it if it's not already in the list, otherwise this method being called twice in a row for whatever reason could cause *serious* issues
+                }
             }
         }
         #endregion
