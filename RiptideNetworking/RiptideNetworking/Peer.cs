@@ -58,6 +58,9 @@ namespace Riptide
     /// <summary>Provides base functionality for <see cref="Server"/> and <see cref="Client"/>.</summary>
     public abstract class Peer
     {
+        /// <summary>An intermediary buffer to help convert <see cref="Message.data"/> to a byte array when sending.</summary>
+        internal byte[] ByteBuffer;
+
         /// <summary>The name to use when logging messages via <see cref="RiptideLogger"/>.</summary>
         public readonly string LogName;
         /// <summary>Sets the relevant connections' <see cref="Connection.TimeoutTime"/>s.</summary>
@@ -91,6 +94,8 @@ namespace Riptide
         public Peer(string logName)
         {
             LogName = logName;
+
+            ByteBuffer = new byte[Message.MaxSize];
         }
 
         /// <summary>Retrieves methods marked with <see cref="MessageHandlerAttribute"/>.</summary>

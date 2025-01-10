@@ -169,15 +169,15 @@ namespace Riptide
             {
                 sequenceId = notify.InsertHeader(message);
                 int byteAmount = message.BytesInUse;
-                Buffer.BlockCopy(message.Data, 0, Message.ByteBuffer, 0, byteAmount);
-                Send(Message.ByteBuffer, byteAmount);
+                Buffer.BlockCopy(message.Data, 0, Peer.ByteBuffer, 0, byteAmount);
+                Send(Peer.ByteBuffer, byteAmount);
                 Metrics.SentNotify(byteAmount);
             }
             else if (message.SendMode == MessageSendMode.Unreliable)
             {
                 int byteAmount = message.BytesInUse;
-                Buffer.BlockCopy(message.Data, 0, Message.ByteBuffer, 0, byteAmount);
-                Send(Message.ByteBuffer, byteAmount);
+                Buffer.BlockCopy(message.Data, 0, Peer.ByteBuffer, 0, byteAmount);
+                Send(Peer.ByteBuffer, byteAmount);
                 Metrics.SentUnreliable(byteAmount);
             }
             else

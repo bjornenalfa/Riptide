@@ -70,13 +70,10 @@ namespace Riptide
                 MaxSize = MaxHeaderSize / BitsPerByte + (MaxHeaderSize % BitsPerByte == 0 ? 0 : 1) + value;
                 maxBitCount = MaxSize * BitsPerByte;
                 maxArraySize = MaxSize / sizeof(ulong) + (MaxSize % sizeof(ulong) == 0 ? 0 : 1);
-                ByteBuffer = new byte[MaxSize];
                 TrimPool(); // When ActiveSocketCount is 0, this clears the pool
                 PendingMessage.ClearPool();
             }
         }
-        /// <summary>An intermediary buffer to help convert <see cref="data"/> to a byte array when sending.</summary>
-        internal static byte[] ByteBuffer;
         /// <summary>The maximum number of bits a message can contain.</summary>
         private static int maxBitCount;
         /// <summary>The maximum size of the <see cref="data"/> array.</summary>
@@ -95,7 +92,6 @@ namespace Riptide
             MaxSize = MaxHeaderSize / BitsPerByte + (MaxHeaderSize % BitsPerByte == 0 ? 0 : 1) + 1225;
             maxBitCount = MaxSize * BitsPerByte;
             maxArraySize = MaxSize / sizeof(ulong) + (MaxSize % sizeof(ulong) == 0 ? 0 : 1);
-            ByteBuffer = new byte[MaxSize];
         }
 
         /// <summary>The message's send mode.</summary>
